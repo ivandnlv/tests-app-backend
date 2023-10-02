@@ -1,7 +1,7 @@
 import express, { json } from 'express';
 import cors from 'cors';
 import { config } from 'dotenv';
-import testsRouter from './routes/tests.routes';
+import { testRouter, questionsRouter } from './routes';
 
 config();
 
@@ -13,7 +13,10 @@ const app = express();
 app.use(cors());
 app.use(json());
 
-app.use('/api', testsRouter);
+const mainPath = '/api';
+
+app.use(mainPath, testRouter);
+app.use(mainPath, questionsRouter);
 
 app.listen(PORT, () => {
   console.log(`Server was started at port ${PORT}`);

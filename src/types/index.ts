@@ -1,1 +1,2 @@
-export * from './Tests';
+export * from './Test';
+export * from './Question';

@@ -1,14 +1,14 @@
 import { Router } from 'express';
 import { testsController } from '../controllers';
 
-const router = Router();
+const testRouter = Router();
 
 const path = '/tests';
 
-router.get(path, testsController.getAllTests);
-router.get(path + '/:id', testsController.getOneTest);
-router.post(path, testsController.createTest);
-router.patch(path, testsController.updateTest);
-router.delete(path, testsController.deleteTest);
+testRouter.get(path, testsController.getAllTests);
+testRouter.get(path + '/:id', testsController.getOneTest);
+testRouter.post(path, testsController.createTest);
+testRouter.patch(path, testsController.updateTest);
+testRouter.delete(path, testsController.deleteTest);
 
-export default router;
+export { testRouter };
