@@ -1,5 +1,10 @@
 import { Request, Response } from 'express';
-import { DeleteTestRequest, TestRequest, UpdateTestRequest } from './tests.types';
+import {
+  DeleteTestRequest,
+  TestRequest,
+  UpdateTestRequest,
+  UpdateQueryValues,
+} from './tests.types';
 import db from '../../db';
 
 class TestsController {
@@ -45,33 +50,54 @@ class TestsController {
   }
 
   updateTest(req: UpdateTestRequest, res: Response) {
-    const { name, description, id } = req.body;
-    db.query(
-      `UPDATE tests SET name = ?, description = ? where test_id = ?`,
-      [name, description, id],
-      (err, result) => {
-        if (err) {
-          res.status(400).json({
-            message: err.message,
-          });
-        } else {
-          res.json({
-            message: 'success',
-            result,
-          });
-        }
-      },
-    );
+    const { name, description, test_id } = req.body;
+
+    if (!test_id) {
+      res.status(400).json({
+        message: 'test_id is required!',
+      });
+      return;
+    }
+
+    let sqlQuery = `UPDATE tests SET `;
+    let queryValues: any[] = [];
+
+    if (name) {
+      sqlQuery += `name = ?, `;
+      queryValues.push(name);
+    }
+
+    if (description) {
+      sqlQuery += `description = ?, `;
+      queryValues.push(description);
+    }
+
+    queryValues.push(test_id);
+
+    sqlQuery = sqlQuery.slice(0, -2) + ' WHERE test_id = ?';
+
+    db.query({ sql: sqlQuery, values: queryValues }, (err, result) => {
+      if (err) {
+        res.status(400).json({
+          message: err.message,
+        });
+      } else {
+        res.json({
+          message: 'success',
+          result,
+        });
+      }
+    });
   }
 
   deleteTest(req: DeleteTestRequest, res: Response) {
-    const { id } = req.body;
+    const { test_id } = req.params;
 
     db.query(
       `
       DELETE FROM tests WHERE test_id = ?
     `,
-      [id],
+      [test_id],
       (err, result) => {
         if (err) {
           res.status(400).json({

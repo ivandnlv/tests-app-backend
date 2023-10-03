@@ -9,6 +9,6 @@ testRouter.get(path, testsController.getAllTests);
 testRouter.get(path + '/:id', testsController.getOneTest);
 testRouter.post(path, testsController.createTest);
 testRouter.patch(path, testsController.updateTest);
-testRouter.delete(path, testsController.deleteTest);
+testRouter.delete(path + '/:test_id', testsController.deleteTest);
 
 export { testRouter };

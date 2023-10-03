@@ -1,4 +1,6 @@
 import mysql from 'mysql';
+
+// Variables from .env file, need to create at the root directory
 import {
   DATABASE_HOST,
   DATABASE_PORT,
@@ -6,8 +8,6 @@ import {
   DATABASE_PASSWORD,
   DATABASE_NAME,
 } from '../utils/variables';
-
-// // Variables from .env file, need to create
 
 const connection = mysql.createConnection({
   host: DATABASE_HOST,

@@ -4,22 +4,6 @@ import { UpdateQuestionBody } from './questions.types';
 import db from '../../db';
 
 class QuestionsController {
-  getQuestionsByTestId(req: Request, res: Response) {
-    const { testId } = req.params;
-
-    db.query(`SELECT * FROM questions WHERE test_id = ?`, [testId], (err, result) => {
-      if (err) {
-        res.status(400).json({
-          message: err.message,
-        });
-      } else {
-        res.json({
-          result,
-        });
-      }
-    });
-  }
-
   createQuestion(req: Request, res: Response) {
     const { testId, text } = req.body;
 
@@ -43,9 +27,9 @@ class QuestionsController {
 
     db.query(
       `
-		INSERT INTO questions (test_id, text)
-		VALUES ?
-	`,
+    INSERT INTO questions (test_id, text)
+    VALUES ?
+  `,
       [queryData],
       (err) => {
         if (err) {
@@ -59,6 +43,22 @@ class QuestionsController {
         }
       },
     );
+  }
+
+  getQuestionsByTestId(req: Request, res: Response) {
+    const { testId } = req.params;
+
+    db.query(`SELECT * FROM questions WHERE test_id = ?`, [testId], (err, result) => {
+      if (err) {
+        res.status(400).json({
+          message: err.message,
+        });
+      } else {
+        res.json({
+          result,
+        });
+      }
+    });
   }
 
   updateQuestion(req: Request, res: Response) {
