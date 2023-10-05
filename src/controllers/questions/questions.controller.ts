@@ -9,11 +9,11 @@ class QuestionsController {
 
     db.query(`INSERT INTO questions (test_id, text) VALUES (?, ?)`, [testId, text], (err) => {
       if (err) {
-        res.status(400).json({
+        return res.status(400).json({
           message: err.message,
         });
       } else {
-        res.json({
+        return res.json({
           status: 'success',
         });
       }
@@ -33,11 +33,11 @@ class QuestionsController {
       [queryData],
       (err) => {
         if (err) {
-          res.status(400).json({
+          return res.status(400).json({
             message: err.message,
           });
         } else {
-          res.json({
+          return res.json({
             status: 'success',
           });
         }
@@ -50,11 +50,11 @@ class QuestionsController {
 
     db.query(`SELECT * FROM questions WHERE test_id = ?`, [testId], (err, result) => {
       if (err) {
-        res.status(400).json({
+        return res.status(400).json({
           message: err.message,
         });
       } else {
-        res.json({
+        return res.json({
           result,
         });
       }
@@ -71,11 +71,11 @@ class QuestionsController {
       [text, question_id],
       (err) => {
         if (err) {
-          res.status(400).json({
+          return res.status(400).json({
             message: err.message,
           });
         } else {
-          res.json({
+          return res.json({
             status: 'success',
           });
         }
@@ -93,11 +93,11 @@ class QuestionsController {
       [questionId],
       (err) => {
         if (err) {
-          res.status(400).json({
+          return res.status(400).json({
             message: err.message,
           });
         } else {
-          res.json({
+          return res.json({
             message: 'success',
           });
         }
@@ -115,11 +115,11 @@ class QuestionsController {
       [test_id],
       (err) => {
         if (err) {
-          res.status(400).json({
+          return res.status(400).json({
             message: err.message,
           });
         } else {
-          res.json({
+          return res.json({
             message: 'success',
           });
         }

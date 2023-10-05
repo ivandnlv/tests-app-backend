@@ -1,10 +1,5 @@
 import { Request, Response } from 'express';
-import {
-  DeleteTestRequest,
-  TestRequest,
-  UpdateTestRequest,
-  UpdateQueryValues,
-} from './tests.types';
+import { DeleteTestRequest, TestRequest, UpdateTestRequest } from './tests.types';
 import db from '../../db';
 
 class TestsController {
@@ -12,11 +7,11 @@ class TestsController {
     const { name, description } = req.body;
     db.query(`INSERT INTO tests (name, description) VALUES (?, ?);`, [name, description], (err) => {
       if (err) {
-        res.status(400).json({
+        return res.status(400).json({
           message: err.message,
         });
       } else {
-        res.json({
+        return res.json({
           message: 'Success',
         });
       }
@@ -25,11 +20,11 @@ class TestsController {
   getAllTests(req: Request, res: Response) {
     db.query('SELECT * FROM tests', (err, rows) => {
       if (err) {
-        res.status(500).json({
+        return res.status(500).json({
           message: err.message,
         });
       } else {
-        res.json(rows);
+        return res.json(rows);
       }
     });
   }
@@ -39,12 +34,12 @@ class TestsController {
 
     db.query('SELECT * FROM tests WHERE test_id = ?', [id], (err, rows) => {
       if (err) {
-        res.status(400).json({
+        return res.status(400).json({
           message: err.message,
           rows,
         });
       } else {
-        res.json(rows);
+        return res.json(rows);
       }
     });
   }
@@ -53,10 +48,9 @@ class TestsController {
     const { name, description, test_id } = req.body;
 
     if (!test_id) {
-      res.status(400).json({
+      return res.status(400).json({
         message: 'test_id is required!',
       });
-      return;
     }
 
     let sqlQuery = `UPDATE tests SET `;
@@ -78,11 +72,11 @@ class TestsController {
 
     db.query({ sql: sqlQuery, values: queryValues }, (err, result) => {
       if (err) {
-        res.status(400).json({
+        return res.status(400).json({
           message: err.message,
         });
       } else {
-        res.json({
+        return res.json({
           message: 'success',
           result,
         });
@@ -100,11 +94,11 @@ class TestsController {
       [test_id],
       (err, result) => {
         if (err) {
-          res.status(400).json({
+          return res.status(400).json({
             message: err.message,
           });
         } else {
-          res.json({
+          return res.json({
             message: 'success',
             result,
           });

@@ -1,14 +1,10 @@
 {
   "compilerOptions": {
-    "module": "CommonJS",
+    "target": "es6",
+    "module": "commonjs",
+    "rootDir": "./",
+    "outDir": "./build",
     "esModuleInterop": true,
-    "noImplicitAny": true,
-    "strict": true,
-    "strictNullChecks": true,
-    "strictPropertyInitialization": true,
-    "baseUrl": "./src",
-    "outDir": "./dist",
-    "target": "ES2020",
-    "allowJs": true
+    "strict": true
   }
 }

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import db from '../../db';
-import { Answer } from 'types';
+import { Answer } from '../../types';
 
 class AnswersController {
   createOneAnswer(req: Request, res: Response) {
@@ -13,11 +13,11 @@ class AnswersController {
       [question_id, text, is_correct],
       (err) => {
         if (err) {
-          res.status(400).json({
+          return res.status(400).json({
             message: err.message,
           });
         } else {
-          res.json({
+          return res.json({
             message: 'success',
           });
         }
@@ -38,11 +38,11 @@ class AnswersController {
       [queryData],
       (err) => {
         if (err) {
-          res.status(400).json({
+          return res.status(400).json({
             message: err.message,
           });
         } else {
-          res.json({
+          return res.json({
             message: 'success',
           });
         }
@@ -55,11 +55,11 @@ class AnswersController {
 
     db.query('SELECT * FROM answers WHERE question_id = ?', [question_id], (err, result) => {
       if (err) {
-        res.status(400).json({
+        return res.status(400).json({
           message: err.message,
         });
       } else {
-        res.json(result);
+        return res.json(result);
       }
     });
   }
@@ -68,7 +68,7 @@ class AnswersController {
     const { answer_id, is_correct, text } = req.body;
 
     if (!answer_id) {
-      res.status(400).json({
+      return res.status(400).json({
         message: 'answer_id is required!',
       });
     }
@@ -91,11 +91,11 @@ class AnswersController {
 
     db.query({ sql: sqlQuery, values: sqlValues }, (err) => {
       if (err) {
-        res.status(400).json({
+        return res.status(400).json({
           message: err.message,
         });
       } else {
-        res.json({
+        return res.json({
           message: 'success',
         });
       }
@@ -107,11 +107,11 @@ class AnswersController {
 
     db.query(`DELETE FROM answers WHERE answer_id = ?`, [answer_id], (err) => {
       if (err) {
-        res.status(400).json({
+        return res.status(400).json({
           message: err.message,
         });
       } else {
-        res.json({
+        return res.json({
           status: 'success',
         });
       }
