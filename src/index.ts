@@ -3,6 +3,10 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { PORT } from './utils/variables';
 
+// TODO:
+// - Добавить колонки для тестов (createdBy, tag)
+// = Добавить фильтрацию тестов (по тегу, по создателю)
+
 import { testRouter, questionsRouter, answersRouter, usersRouter } from './routes';
 
 const app = express();

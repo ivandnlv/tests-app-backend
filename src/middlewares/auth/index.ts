@@ -38,21 +38,15 @@ export const isAuth = (req: Request, res: Response, next: NextFunction) => {
       });
     }
 
-    const tokenDecryptData: { user_id: string; role: UserRoles } | undefined = jwt.verify(
-      token,
-      JWT_SECRET ?? '123',
-    ) as {
-      user_id: string;
-      role: UserRoles;
-    };
-    if (tokenDecryptData && tokenDecryptData.user_id) {
-      req.user_id = tokenDecryptData.user_id;
-      req.role = tokenDecryptData.role;
-      next();
-    } else {
-      return res.status(400).json({
+    const decryptToken = jwt.verify(token, JWT_SECRET ?? '123');
+
+    if (!decryptToken) {
+      return res.status(401).json({
         message: errMessage,
       });
+    } else {
+      req.token = token;
+      next();
     }
   } catch (error) {
     return res.status(401).json({

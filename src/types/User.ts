@@ -20,8 +20,7 @@ export interface User {
 declare global {
   namespace Express {
     interface Request {
-      user_id: User['user_id'];
-      role: User['role'];
+      token: string;
     }
   }
 }
