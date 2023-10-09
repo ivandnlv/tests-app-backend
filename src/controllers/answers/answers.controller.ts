@@ -26,7 +26,11 @@ class AnswersController {
   createManyAnswers(req: Request, res: Response) {
     const { answers }: { answers: Answer[] } = req.body;
 
-    const queryData = answers.map((answer) => [answer.question_id, answer.text, answer.is_correct]);
+    const queryData = answers.map((answer) => [
+      answer.question_id,
+      answer.answer_text,
+      answer.is_correct,
+    ]);
 
     db.query(
       `
@@ -63,7 +67,8 @@ class AnswersController {
   }
 
   updateAnswer(req: Request, res: Response) {
-    const { answer_id, is_correct, text } = req.body;
+    const { answer_id } = req.params;
+    const { is_correct, text } = req.body;
 
     if (!answer_id) {
       return res.status(400).json({
@@ -75,11 +80,11 @@ class AnswersController {
     let sqlValues: any[] = [];
 
     if (text) {
-      sqlQuery += 'text = ?, ';
+      sqlQuery += 'answer_text = ?, ';
       sqlValues.push(text);
     }
 
-    if (is_correct) {
+    if (req.body.hasOwnProperty('is_correct')) {
       sqlQuery += 'is_correct = ?, ';
       sqlValues.push(is_correct);
     }
@@ -91,6 +96,8 @@ class AnswersController {
       if (err) {
         return res.status(400).json({
           message: err.message,
+          sqlQuery,
+          sqlValues,
         });
       } else {
         return res.json({

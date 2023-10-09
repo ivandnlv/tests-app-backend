@@ -1,6 +1,7 @@
 interface Question {
-  test_id: number;
-  text: string;
+  question_id: string;
+  test_id: string | number;
+  question_text: string;
 }
 
 export { Question };

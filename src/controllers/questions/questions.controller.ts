@@ -23,7 +23,7 @@ class QuestionsController {
   createManyQuestions(req: Request, res: Response) {
     const { questions }: { questions: Question[] } = req.body;
 
-    const queryData = questions.map((question) => [question.test_id, question.text]);
+    const queryData = questions.map((question) => [question.test_id, question.question_text]);
 
     db.query(
       `
@@ -62,13 +62,13 @@ class QuestionsController {
   }
 
   updateQuestion(req: Request, res: Response) {
-    const { text, question_id }: UpdateQuestionBody = req.body;
+    const { question_text, question_id }: UpdateQuestionBody = req.body;
 
     db.query(
       `
       UPDATE questions SET text = ? WHERE question_id = ?
       `,
-      [text, question_id],
+      [question_text, question_id],
       (err) => {
         if (err) {
           return res.status(400).json({

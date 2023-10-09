@@ -1,9 +1,13 @@
 import { body } from 'express-validator';
-import { roles } from '../../types';
+import { UserRoles, roles } from '../../types';
 import { Request, Response, NextFunction } from 'express';
 import { JWT_SECRET } from '../../utils/variables';
-import { UserRoles } from '../../types';
-import jwt from 'jsonwebtoken';
+import jwt, { JwtPayload } from 'jsonwebtoken';
+
+interface TokenPayload extends JwtPayload {
+  id: string;
+  role: UserRoles;
+}
 
 export const registerValidator = [
   body('email').isEmail().withMessage('Неправильно введен email'),
@@ -51,6 +55,58 @@ export const isAuth = (req: Request, res: Response, next: NextFunction) => {
   } catch (error) {
     return res.status(401).json({
       message: errMessage,
+    });
+  }
+};
+
+export const isTeacher = (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const token = req.token;
+
+    const payload = jwt.decode(token, { complete: true })?.payload as TokenPayload | undefined;
+
+    if (!payload) {
+      return res.status(403).json({
+        message: 'Нет доступа',
+      });
+    }
+
+    if (payload.role !== 'teacher' && payload.role !== 'admin') {
+      return res.status(403).json({
+        message: 'Нет доступа',
+      });
+    }
+
+    next();
+  } catch (error) {
+    return res.status(403).json({
+      message: 'Нет доступа',
+    });
+  }
+};
+
+export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const token = req.token;
+
+    const payload = jwt.decode(token, { complete: true })?.payload as TokenPayload | undefined;
+
+    if (!payload) {
+      return res.status(403).json({
+        message: 'Нет доступа',
+      });
+    }
+
+    if (payload.role !== 'admin') {
+      return res.status(403).json({
+        message: 'Нет досутпа',
+      });
+    }
+
+    next();
+  } catch (error) {
+    return res.status(403).json({
+      message: 'Нет доступа',
     });
   }
 };

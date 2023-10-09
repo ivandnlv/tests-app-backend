@@ -1,7 +1,7 @@
 interface Answer {
   question_id: string;
   is_correct: boolean;
-  text: string;
+  answer_text: string;
 }
 
 export { Answer };
