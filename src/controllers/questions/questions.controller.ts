@@ -5,7 +5,8 @@ import db from '../../db';
 
 class QuestionsController {
   createQuestion(req: Request, res: Response) {
-    const { testId, text } = req.body;
+    const testId = req.params.test_id;
+    const { text } = req.body;
 
     db.query(`INSERT INTO questions (test_id, text) VALUES (?, ?)`, [testId, text], (err) => {
       if (err) {

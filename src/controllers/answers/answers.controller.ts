@@ -7,7 +7,7 @@ class AnswersController {
     const { question_id, text, is_correct } = req.body;
 
     db.query(
-      `INSERT INTO answers (question_id, text, is_correct) VALUES (?, ?, ?)`,
+      `INSERT INTO answers (question_id, answer_text, is_correct) VALUES (?, ?, ?)`,
       [question_id, text, is_correct],
       (err) => {
         if (err) {
@@ -34,7 +34,7 @@ class AnswersController {
 
     db.query(
       `
-		INSERT INTO answers (question_id, text, is_correct)
+		INSERT INTO answers (question_id, answer_text, is_correct)
 		VALUES ?
 	`,
       [queryData],

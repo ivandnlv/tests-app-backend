@@ -7,7 +7,7 @@ import {
   DATABASE_LOGIN,
   DATABASE_PASSWORD,
   DATABASE_NAME,
-} from '../utils/variables';
+} from '../utils';
 
 const connection = mysql.createConnection({
   host: DATABASE_HOST,

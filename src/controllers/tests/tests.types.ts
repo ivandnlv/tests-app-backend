@@ -5,6 +5,10 @@ interface CreateTestRequest extends Request {
   body: {
     name: Test['name'];
     description: Test['description'];
+    questions: {
+      question_text: Question['question_text'];
+      answers: Answer[];
+    }[];
   };
 }
 

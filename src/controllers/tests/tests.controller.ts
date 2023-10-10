@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import {
   CreateTestRequest,
   GetTestQueryResult,
@@ -7,24 +7,74 @@ import {
   DeleteTestRequest,
 } from './tests.types';
 import db from '../../db';
-import { Test } from '../../types';
+import { validationResult } from 'express-validator';
+import { BadRequest, DefaultError } from '../../utils';
 
 class TestsController {
-  createTest(req: CreateTestRequest, res: Response) {
-    const { name, description } = req.body;
-    db.query(`INSERT INTO tests (name, description) VALUES (?, ?);`, [name, description], (err) => {
-      if (err) {
-        return res.status(400).json({
-          message: err.message,
-        });
-      } else {
-        return res.json({
-          message: 'Success',
-        });
-      }
-    });
+  createTest(req: CreateTestRequest, res: Response, next: NextFunction) {
+    const validationErrors = validationResult(req);
+
+    if (!validationErrors.isEmpty()) {
+      const errors = validationErrors.array().map((err) => err.msg);
+      throw new BadRequest(errors[0]);
+    }
+    try {
+      const { name, description, questions } = req.body;
+
+      db.query(
+        'INSERT INTO tests (name, description) VALUES (?, ?)',
+        [name, description],
+        (err, result) => {
+          if (err) {
+            return next(new DefaultError(err.message));
+          } else {
+            const testId = result.insertId;
+
+            let questionsIndex = 0;
+            for (const question of questions) {
+              const { answers, question_text } = question;
+              db.query(
+                'INSERT INTO questions (question_text, test_id) VALUES (?, ?)',
+                [question_text, testId],
+                (err, questionResult) => {
+                  if (err) {
+                    db.query('DELETE FROM tests WHERE test_id = ?', [testId]);
+                    return next(new DefaultError(err.message));
+                  } else {
+                    const questionId = questionResult.insertId;
+                    for (const answer of answers) {
+                      const { answer_text, is_correct } = answer;
+
+                      db.query(
+                        'INSERT INTO answers (question_id, answer_text, is_correct) VALUES (?, ?, ?)',
+                        [questionId, answer_text, is_correct],
+                        (err) => {
+                          if (err) {
+                            db.query('DELETE FROM questions WHERE question_id = ?', [questionId]);
+                            db.query('DELETE FROM tests WHERE test_id = ?', [testId]);
+                            return next(new DefaultError(err.message));
+                          }
+                        },
+                      );
+                    }
+                  }
+                },
+              );
+              questionsIndex++;
+              if (questionsIndex === questions.length) {
+                return res.json({
+                  status: 'success',
+                });
+              }
+            }
+          }
+        },
+      );
+    } catch (error) {
+      next(error);
+    }
   }
-  getAllTests(req: Request, res: Response) {
+  async getAllTests(req: Request, res: Response) {
     try {
       db.query('SELECT * FROM tests', (err, rows) => {
         if (err) {
@@ -64,37 +114,58 @@ class TestsController {
             } else {
               const testData: GetTestQueryResult[] = result;
 
-              const { name, description } = testData[0];
+              if (!testData.length)
+                return res.status(404).json({ message: 'Такого теста не существует' });
 
-              let obj: GetTestQueryOutput = {
-                name,
-                description,
-                questions: [],
-              };
+              if (testData[0]?.answer_text) {
+                const { name, description } = testData[0];
 
-              const questionsCount: number = [
-                ...new Set(testData.map((item) => item.question_text)),
-              ].length;
+                let obj: GetTestQueryOutput = {
+                  name,
+                  description,
+                  questions: [],
+                };
 
-              const questions: GetTestQueryOutput['questions'] = Array(questionsCount).fill({
-                text: testData[0].question_text,
-                answers: [],
-              });
+                const questionsCount: number = [
+                  ...new Set(testData.map((item) => item.question_text)),
+                ].length;
 
-              let i = 0;
-              testData.forEach((testItem) => {
-                if (questions[i].text) {
-                  questions[i].answers.push(testItem.answer_text);
-                } else {
-                  i += 1;
-                  questions[i].text = testItem.question_text;
-                  questions[i].answers.push(testItem.answer_text);
+                const questions: GetTestQueryOutput['questions'] = [];
+
+                for (let i = 0; i < questionsCount; i++) {
+                  questions.push({ text: null, answers: [] });
                 }
-              });
 
-              obj.questions = questions;
+                console.log(questions);
 
-              return res.json(obj);
+                let i = 0;
+                testData.forEach((testItem) => {
+                  if (!questions[i].text) {
+                    questions[i].text = testItem.question_text;
+                    questions[i].answers.push(testItem.answer_text);
+                    console.log('Первый if', questions, i);
+                  } else if (testItem.question_text === questions[i].text) {
+                    questions[i].answers.push(testItem.answer_text);
+                    console.log('Второй if', questions, i);
+                  } else if (testItem.question_text !== questions[i].text) {
+                    i += 1;
+                    questions[i].answers = [];
+                    questions[i].text = testItem.question_text;
+                    questions[i].answers.push(testItem.answer_text);
+                    console.log('Третий if', questions, i);
+                  }
+                });
+
+                obj.questions = questions;
+
+                return res.json(obj);
+              } else {
+                return res.json({
+                  name: testData[0].name,
+                  description: testData[0].description,
+                  questions: [],
+                });
+              }
             }
           },
         );
@@ -105,7 +176,11 @@ class TestsController {
               message: err.message,
             });
           } else {
-            return res.json(result[0]);
+            if (result.length) {
+              return res.json(result[0]);
+            } else {
+              return res.status(404).json({ message: 'Тест не найден' });
+            }
           }
         });
       }
@@ -146,7 +221,7 @@ class TestsController {
 
     sqlQuery = sqlQuery.slice(0, -2) + ' WHERE test_id = ?';
 
-    db.query({ sql: sqlQuery, values: queryValues }, (err, result) => {
+    db.query({ sql: sqlQuery, values: queryValues }, (err) => {
       if (err) {
         return res.status(400).json({
           message: err.message,
@@ -154,33 +229,59 @@ class TestsController {
       } else {
         return res.json({
           message: 'success',
-          result,
         });
       }
     });
   }
 
   deleteTest(req: DeleteTestRequest, res: Response) {
-    const { test_id } = req.params;
+    try {
+      const { test_id } = req.params;
 
-    db.query(
-      `
-      DELETE FROM tests WHERE test_id = ?
-    `,
-      [test_id],
-      (err, result) => {
+      db.query('SELECT question_id FROM questions WHERE test_id = ?', [test_id], (err, result) => {
         if (err) {
-          return res.status(400).json({
+          return res.status(500).json({
             message: err.message,
           });
         } else {
-          return res.json({
-            message: 'success',
-            result,
-          });
+          let questionsIds: { question_id: string }[] = result;
+          const ids = questionsIds.map((item) => item.question_id);
+          let questionsIndex = 0;
+          for (const questionId of ids) {
+            db.query('DELETE FROM answers WHERE question_id = ?', [questionId], (err) => {
+              if (err) {
+                return res.status(500).json({
+                  message: err.message,
+                });
+              }
+            });
+            db.query('DELETE FROM questions WHERE question_id = ?', [questionId], (err) => {
+              if (err) {
+                return res.status(500).json({
+                  message: err.message,
+                });
+              }
+            });
+            questionsIndex++;
+          }
+          if (questionsIndex === ids.length) {
+            db.query('DELETE FROM tests WHERE test_id = ?', [test_id], (err) => {
+              if (err) {
+                return res.status(500).json({
+                  message: err.message,
+                });
+              } else {
+                return res.json({
+                  status: 'success',
+                });
+              }
+            });
+          }
         }
-      },
-    );
+      });
+    } catch (error) {
+      return res.status(500).json(error);
+    }
   }
 }
 

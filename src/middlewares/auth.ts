@@ -1,7 +1,7 @@
 import { body } from 'express-validator';
-import { UserRoles, roles } from '../../types';
+import { UserRoles, roles } from '../types';
 import { Request, Response, NextFunction } from 'express';
-import { JWT_SECRET } from '../../utils/variables';
+import { JWT_SECRET } from '../utils';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 
 interface TokenPayload extends JwtPayload {

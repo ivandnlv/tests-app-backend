@@ -1,7 +1,7 @@
 import express, { json } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import { PORT } from './utils/variables';
+import { PORT } from './utils';
 
 import { testRouter, questionsRouter, answersRouter, usersRouter } from './routes';
 
