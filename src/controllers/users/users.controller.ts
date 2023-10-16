@@ -7,10 +7,16 @@ import { validationResult } from 'express-validator';
 import bcrypt from 'bcrypt';
 import { User, UserRoles, roles } from '../../types';
 
-const generateAccessToken = (id: string, role: UserRoles) => {
-  const payload = { id, role };
+const generateAccessToken = (id: string, role_id: UserRoles) => {
+  const payload = { id, role_id };
 
-  return jwt.sign(payload, JWT_SECRET ?? '123', { expiresIn: '24h' });
+  return jwt.sign(payload, JWT_SECRET ?? '123', { expiresIn: '10m' });
+};
+
+const generateRefreshToken = (id: string, role_id: UserRoles) => {
+  const payload = { id, role_id };
+
+  return jwt.sign(payload, JWT_SECRET ?? '123', { expiresIn: '30d' });
 };
 
 class UsersController {
@@ -22,7 +28,7 @@ class UsersController {
         return res.status(400).json(validationErrors);
       }
 
-      const { email, firstname, lastname, role, middlename, password } = req.body;
+      const { email, firstname, lastname, role_id, middlename, password } = req.body;
 
       db.query('SELECT email FROM users WHERE email = ?', [email], (err, result) => {
         if (err) {
@@ -41,8 +47,8 @@ class UsersController {
       const salt = await bcrypt.genSalt();
       const passwordHash = await bcrypt.hash(password, salt);
 
-      let sqlQuery = 'INSERT INTO users (firstname, lastname, role, email, password_hash, ';
-      let sqlValues = [firstname, lastname, role, email, passwordHash];
+      let sqlQuery = 'INSERT INTO users (firstname, lastname, role_id, email, password_hash, ';
+      let sqlValues = [firstname, lastname, role_id, email, passwordHash];
 
       if (middlename) {
         sqlQuery += 'middlename) VALUES (?, ?, ?, ?, ?, ?)';
@@ -63,10 +69,26 @@ class UsersController {
                 message: err.message,
               });
             } else {
-              const token = generateAccessToken(result[0].user_id, role);
-              return res.json({
-                token,
-              });
+              const { user_id: userId, role_id: roleId } = result[0];
+              const accessToken = generateAccessToken(userId, roleId);
+              const refreshToken = generateRefreshToken(userId, roleId);
+
+              db.query(
+                'INSERT INTO tokens (user_id, token) VALUES (?, ?)',
+                [userId, refreshToken],
+                (err) => {
+                  if (err) {
+                    return res.status(400).json({
+                      message: err.message,
+                    });
+                  } else {
+                    return res.cookie('refreshToken', refreshToken).json({
+                      status: 'success',
+                      accessToken,
+                    });
+                  }
+                },
+              );
             }
           });
         }
@@ -92,14 +114,52 @@ class UsersController {
             message: 'Неверные email или пароль',
           });
         } else {
-          const hash = result[0].password_hash;
-          const isCorrect = await bcrypt.compare(password, hash);
+          if (!result[0]) {
+            return res.status(400).json({
+              message: 'Неверные email или пароль',
+            });
+          }
+
+          const { password_hash: passwordHash, role_id: roleId, user_id: userId } = result[0];
+          const isCorrect = await bcrypt.compare(password, passwordHash);
 
           if (isCorrect) {
-            const token = generateAccessToken(result[0].user_id, result[0].role);
-            return res.json({
+            const accessToken = generateAccessToken(userId, roleId);
+            const refreshToken = generateRefreshToken(userId, roleId);
+            db.query('SELECT * FROM tokens WHERE user_id = ?', [userId], (err, tokenResult) => {
+              if (err) {
+                return res.status(500).json({
+                  message: err.message,
+                });
+              } else if (tokenResult.length && tokenResult[0].token) {
+                db.query(
+                  'UPDATE tokens SET token = ? WHERE user_id = ?',
+                  [refreshToken, userId],
+                  (err) => {
+                    if (err) {
+                      return res.status(500).json({
+                        message: err.message,
+                      });
+                    }
+                  },
+                );
+              } else if (!tokenResult.length) {
+                db.query(
+                  'INSERT INTO tokens (user_id, token) VALUES (?, ?)',
+                  [userId, refreshToken],
+                  (err) => {
+                    if (err) {
+                      return res.status(500).json({
+                        message: err.message,
+                      });
+                    }
+                  },
+                );
+              }
+            });
+            return res.cookie('refreshToken', refreshToken).json({
               status: 'success',
-              token,
+              accessToken,
             });
           } else {
             return res.status(400).json({
@@ -115,23 +175,32 @@ class UsersController {
 
   getAllUsers(req: Request, res: Response) {
     try {
-      db.query('SELECT * FROM users', (err, _result) => {
-        if (err) {
-          return res.status(400).json({
-            message: err.message,
-          });
-        } else {
-          const result: User[] = _result;
-          const users = result.map(({ email, firstname, middlename, lastname, role, user_id }) => {
-            if (middlename) {
-              return { email, firstname, middlename, lastname, role, user_id };
-            } else {
-              return { email, firstname, lastname, role, user_id };
-            }
-          });
-          return res.json(users);
-        }
-      });
+      db.query(
+        `
+        SELECT users.*, roles.role_name
+        FROM users
+        JOIN roles ON users.role_id = roles.role_id;
+      `,
+        (err, _result) => {
+          if (err) {
+            return res.status(400).json({
+              message: err.message,
+            });
+          } else {
+            const result: User[] = _result;
+            const users = result.map(
+              ({ email, firstname, middlename, lastname, user_id, role_name }) => {
+                if (middlename) {
+                  return { email, firstname, middlename, lastname, user_id, role_name };
+                } else {
+                  return { email, firstname, lastname, user_id, role_name };
+                }
+              },
+            );
+            return res.json(users);
+          }
+        },
+      );
     } catch (error) {
       return res.status(500).json(error);
     }
@@ -146,6 +215,11 @@ class UsersController {
           message: err.message,
         });
       } else {
+        if (!_result.length) {
+          return res.status(404).json({
+            message: 'Пользователь не найден',
+          });
+        }
         const result: User[] = _result;
         let user: Partial<User> | null = null;
         if (result[0].middlename) {
@@ -155,7 +229,7 @@ class UsersController {
             middlename: result[0].middlename,
             lastname: result[0].lastname,
             email: result[0].email,
-            role: result[0].role,
+            role_id: result[0].role_id,
           };
         } else {
           user = {
@@ -163,7 +237,7 @@ class UsersController {
             firstname: result[0].firstname,
             lastname: result[0].lastname,
             email: result[0].email,
-            role: result[0].role,
+            role_id: result[0].role_id,
           };
         }
         return res.json(user);
@@ -231,11 +305,11 @@ class UsersController {
       });
     }
 
-    const { id, role } = payload as { id: string; role: string };
+    const { id, role_id } = payload as { id: string; role_id: string };
 
     const { user_id } = req.params;
 
-    if (user_id !== id && role !== 'admin') {
+    if (user_id !== id && role_id !== roles.ADMIN.toString()) {
       return res.status(403).json({
         message: 'Нет доступа',
       });
@@ -248,7 +322,7 @@ class UsersController {
               message: err.message,
             });
           } else {
-            if (result[0].role === roles.ADMIN) {
+            if (result[0].role_id === roles.ADMIN) {
               return res.status(403).json({
                 message: 'Нет доступа',
               });

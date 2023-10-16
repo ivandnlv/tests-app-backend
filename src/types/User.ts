@@ -1,7 +1,7 @@
 export const roles = {
-  TEACHER: 'teacher',
-  USER: 'user',
-  ADMIN: 'admin',
+  ADMIN: 1,
+  USER: 2,
+  TEACHER: 3,
 } as const;
 
 export type UserRoles = typeof roles.TEACHER | typeof roles.USER | typeof roles.ADMIN;
@@ -13,8 +13,9 @@ export interface User {
   middlename?: string;
   token: string;
   email: string;
-  role: UserRoles;
+  role_id: UserRoles;
   password_hash: string;
+  role_name: string;
 }
 
 declare global {

@@ -6,7 +6,7 @@ import jwt, { JwtPayload } from 'jsonwebtoken';
 
 interface TokenPayload extends JwtPayload {
   id: string;
-  role: UserRoles;
+  role_id: UserRoles;
 }
 
 export const registerValidator = [
@@ -19,7 +19,7 @@ export const registerValidator = [
     .optional()
     .isLength({ min: 2, max: 255 })
     .withMessage('Длина имени и фамилии может быть от 2 до 255 символов'),
-  body('role')
+  body('role_id')
     .isIn([...Object.values(roles)])
     .withMessage('Выберите роль'),
 ];
@@ -71,7 +71,7 @@ export const isTeacher = (req: Request, res: Response, next: NextFunction) => {
       });
     }
 
-    if (payload.role !== 'teacher' && payload.role !== 'admin') {
+    if (payload.role_id !== roles.TEACHER && payload.role !== roles.ADMIN) {
       return res.status(403).json({
         message: 'Нет доступа',
       });
@@ -97,7 +97,7 @@ export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
       });
     }
 
-    if (payload.role !== 'admin') {
+    if (payload.role_id !== roles.ADMIN) {
       return res.status(403).json({
         message: 'Нет досутпа',
       });

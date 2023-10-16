@@ -76,15 +76,58 @@ class TestsController {
   }
   async getAllTests(req: Request, res: Response) {
     try {
-      db.query('SELECT * FROM tests', (err, rows) => {
+      const { limit = 10, page = 1, order_by = 'test_id' } = req.query;
+
+      const limitParam = Number(limit);
+      const pageParam = Number(page) - 1;
+      const offset = pageParam * Number(limit);
+
+      let testsCount = 10;
+      let allPagesCount = 0;
+
+      db.query('SELECT COUNT(*) as tests_count FROM tests;', async (err, result) => {
         if (err) {
           return res.status(500).json({
             message: err.message,
           });
         } else {
-          return res.json(rows);
+          testsCount = await result[0].tests_count;
+          allPagesCount = Math.ceil(testsCount / limitParam);
         }
       });
+
+      db.query(
+        `
+        SELECT * 
+        FROM tests
+        ORDER BY ?
+        LIMIT ?
+        OFFSET ?
+      `,
+        [order_by, limitParam, offset],
+        (err, result) => {
+          if (err) {
+            return res.status(500).json({
+              message: err.message,
+              query: err.sql,
+            });
+          } else {
+            if (pageParam > allPagesCount) {
+              return res.status(404).json({
+                message: 'Запрашиваемая страница не найдена',
+              });
+            }
+
+            return res.json({
+              tests: result,
+              currentPage: page,
+              allTestsCount: testsCount,
+              allPagesCount,
+              limit,
+            });
+          }
+        },
+      );
     } catch (error) {
       return res.status(500).json(error);
     }
@@ -136,23 +179,18 @@ class TestsController {
                   questions.push({ text: null, answers: [] });
                 }
 
-                console.log(questions);
-
                 let i = 0;
                 testData.forEach((testItem) => {
                   if (!questions[i].text) {
                     questions[i].text = testItem.question_text;
                     questions[i].answers.push(testItem.answer_text);
-                    console.log('Первый if', questions, i);
                   } else if (testItem.question_text === questions[i].text) {
                     questions[i].answers.push(testItem.answer_text);
-                    console.log('Второй if', questions, i);
                   } else if (testItem.question_text !== questions[i].text) {
                     i += 1;
                     questions[i].answers = [];
                     questions[i].text = testItem.question_text;
                     questions[i].answers.push(testItem.answer_text);
-                    console.log('Третий if', questions, i);
                   }
                 });
 

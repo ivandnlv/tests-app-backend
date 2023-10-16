@@ -4,7 +4,8 @@ import { Answer } from '../../types';
 
 class AnswersController {
   createOneAnswer(req: Request, res: Response) {
-    const { question_id, text, is_correct } = req.body;
+    const { question_id } = req.params;
+    const { text, is_correct } = req.body;
 
     db.query(
       `INSERT INTO answers (question_id, answer_text, is_correct) VALUES (?, ?, ?)`,

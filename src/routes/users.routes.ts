@@ -6,6 +6,7 @@ const usersRouter = Router();
 
 const path = '/users';
 
+// api/users
 usersRouter.post(path + '/register', registerValidator, usersController.createUser);
 usersRouter.post(path + '/login', authValidator, usersController.checkUser);
 usersRouter.get(path, usersController.getAllUsers);
