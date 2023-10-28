@@ -180,6 +180,7 @@ class TestsController {
                 }
 
                 let i = 0;
+
                 testData.forEach((testItem) => {
                   if (!questions[i].text) {
                     questions[i].text = testItem.question_text;

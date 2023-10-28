@@ -6,8 +6,8 @@ const testRouter = Router();
 
 const path = '/tests';
 
-testRouter.get(path, isAuth, testsController.getAllTests);
-testRouter.get(path + '/:id', isAuth, testsController.getOneTest);
+testRouter.get(path, testsController.getAllTests);
+testRouter.get(path + '/:id', testsController.getOneTest);
 testRouter.post(
   path,
   isAuth,
