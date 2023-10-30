@@ -3,6 +3,7 @@
 
 ### Node ###
 # Logs
+
 logs
 *.log
 npm-debug.log*
@@ -45,6 +46,7 @@ build/Release
 # Dependency directories
 node_modules/
 jspm_packages/
+db_scripts/
 
 # Snowpack dependency directory (https://snowpack.dev/)
 web_modules/
